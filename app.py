@@ -1653,8 +1653,7 @@ def Log(category, message):
         log = f"{time} - [{category.upper()}] - {message} \n"
         f.write(log)
 
-
-if __name__ == '__main__':
+def initialize_files():
     # create version.txt and android_version.txt if they don't exist
     if not os.path.exists("data/persist/version.txt"):
         with open("data/persist/version.txt", "w") as f:
@@ -1663,12 +1662,15 @@ if __name__ == '__main__':
         with open("data/persist/android_version.txt", "w") as f:
             f.write("1.0.0")
 
+if __name__ == '__main__':
+    initialize_files()
     Log('server', f'starting server on: {args.host}:{args.port}')
 
     scheduler_thread = threading.Thread(target=run_scheduler)
     app.run(debug=args.debug, port=args.port, host=args.host)
 
 with app.app_context():
+    initialize_files()
     db.create_all()
 
 scheduler_thread = threading.Thread(target=run_scheduler)
