@@ -43,7 +43,7 @@ logs_folder = os.environ.get("LOGS_FOLDER", os.path.join(BASE_DIR, 'data/persist
 gamedata_folder = os.environ.get("GAMEDATA_FOLDER", os.path.join(BASE_DIR, 'data/persist/gamedata'))
 data_folder = os.environ.get("DATA_FOLDER", os.path.join(BASE_DIR, 'data/persist'))
 backup_folder = os.environ.get("BACKUP_FOLDER", os.path.join(BASE_DIR, 'backup'))
-
+debug = os.environ.get("DEBUG", False)
 
 app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
 
@@ -1661,6 +1661,47 @@ def initialize_files():
     if not os.path.exists("data/persist/android_version.txt"):
         with open("data/persist/android_version.txt", "w") as f:
             f.write("1.0.0")
+
+
+@app.before_request
+def log_request_details():
+    if not debug:
+        return None
+
+    Log('middleware', "--- NEW REQUEST RECEIVED ---")
+
+    # 1. Route / URL details
+    Log('middleware', f"Method: {request.method}")
+    Log('middleware', f"Path:   {request.path}")
+    Log('middleware', f"URL:    {request.url}")
+
+    # 2. Query Strings (e.g., ?search=banana&page=2)
+    # request.args holds parsed query parameters as a dictionary-like object
+    if request.args:
+        Log('middleware', f"Query Strings: {dict(request.args)}")
+
+    # 3. Headers
+    # Useful if you need to inspect Content-Type, Authorization, etc.
+    Log('middleware', f"Headers: {dict(request.headers)}")
+
+    # 4. Data Body (Handles raw text, form-encoded, and JSON)
+    # request.get_data() gets the raw bytes. .decode() turns it into a string.
+    raw_body = request.get_data().decode('utf-8', errors='ignore')
+    if raw_body:
+        Log('middleware', f"Raw Body Content: {raw_body}")
+
+        # If it happens to be JSON, Flask can parse it automatically:
+        if request.is_json:
+            Log('middleware', f"Parsed JSON Body: {request.json}")
+
+        # If it's the url-encoded form data from your earlier snippet:
+        elif request.form:
+            Log('middleware', f"Parsed Form Body: {dict(request.form)}")
+
+    Log('middleware', "-----------------------------\n")
+
+    # Return None so Flask continues executing the actual route function
+    return None
 
 if __name__ == '__main__':
     initialize_files()
